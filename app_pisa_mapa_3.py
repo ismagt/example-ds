@@ -59,16 +59,17 @@ community_options = [{'label': 'All communities', 'value': 'All'}] + \
 app.layout = html.Div([
     dbc.Container(fluid=True, children=[  # Contenedor principal
         dbc.Row([
-            dbc.Col(html.Img(src='/assets/banner_2.png', style={'width': '100%', 'height': 'auto'}), width=12)
-        ]),
-        dbc.Row([
-            dbc.Col(dcc.Graph(id='3d-plot'), width=8),
             dbc.Col(
-                # Envuelve el gráfico SHAP con dcc.Loading
                 dcc.Loading(
-                    id="loading-shap-bar-chart",
+                    children=[dcc.Graph(id='3d-plot')],
+                    type="circle",  # Ajusta el tipo según prefieras
+                ), 
+                width=8
+            ),
+            dbc.Col(
+                dcc.Loading(
                     children=[dcc.Graph(id='shap-bar-chart')],
-                    type="default",  # Puedes elegir otros estilos como "circle", "dot", etc.
+                    type="circle",
                 ), 
                 width=4
             ),
@@ -80,11 +81,41 @@ app.layout = html.Div([
                                  clearable=False), width=8),
         ]),
         dbc.Row([
-            dbc.Col(dcc.Graph(id='histogram-repeat'), width=2),
-            dbc.Col(dcc.Graph(id='histogram-level'), width=2),
-            dbc.Col(dcc.Graph(id='histogram-gender'), width=2),
-            dbc.Col(dcc.Graph(id='histogram-school-type'), width=2),
-            dbc.Col(dcc.Graph(id='community-map'), width=4),
+            dbc.Col(
+                dcc.Loading(
+                    children=[dcc.Graph(id='histogram-repeat')],
+                    type="circle",
+                ), 
+                width=2
+            ),
+            dbc.Col(
+                dcc.Loading(
+                    children=[dcc.Graph(id='histogram-level')],
+                    type="circle",
+                ), 
+                width=2
+            ),
+            dbc.Col(
+                dcc.Loading(
+                    children=[dcc.Graph(id='histogram-gender')],
+                    type="circle",
+                ), 
+                width=2
+            ),
+            dbc.Col(
+                dcc.Loading(
+                    children=[dcc.Graph(id='histogram-school-type')],
+                    type="circle",
+                ), 
+                width=2
+            ),
+            dbc.Col(
+                dcc.Loading(
+                    children=[dcc.Graph(id='community-map')],
+                    type="circle",
+                ), 
+                width=4
+            ),
         ]),
     ]),
     html.Footer(
@@ -106,7 +137,6 @@ app.layout = html.Div([
         className="footer"
     ) 
 ])
-
 # Callback para la actualización de la visualización 3D y los histogramas
 @app.callback(
     [
