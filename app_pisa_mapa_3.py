@@ -63,7 +63,15 @@ app.layout = html.Div([
         ]),
         dbc.Row([
             dbc.Col(dcc.Graph(id='3d-plot'), width=8),
-            dbc.Col(dcc.Graph(id='shap-bar-chart'), width=4),
+            dbc.Col(
+                # Envuelve el gráfico SHAP con dcc.Loading
+                dcc.Loading(
+                    id="loading-shap-bar-chart",
+                    children=[dcc.Graph(id='shap-bar-chart')],
+                    type="default",  # Puedes elegir otros estilos como "circle", "dot", etc.
+                ), 
+                width=4
+            ),
         ]),
         dbc.Row([
             dbc.Col(dcc.Dropdown(id='community-dropdown', 
@@ -78,8 +86,8 @@ app.layout = html.Div([
             dbc.Col(dcc.Graph(id='histogram-school-type'), width=2),
             dbc.Col(dcc.Graph(id='community-map'), width=4),
         ]),
-    ],),
-   html.Footer(
+    ]),
+    html.Footer(
         [
             html.Div(
                 [
