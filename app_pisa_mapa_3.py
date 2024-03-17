@@ -57,6 +57,9 @@ community_options = [{'label': 'All communities', 'value': 'All'}] + \
 
 # Layout de la aplicación Dash
 app.layout = html.Div([
+    dbc.Row([
+        dbc.Col(html.Img(src='/assets/banner_2.png', style={'width': '100%', 'height': 'auto'}), width=12)
+    ]),
     dbc.Container(fluid=True, children=[  # Contenedor principal
         dbc.Row([
             dbc.Col(
