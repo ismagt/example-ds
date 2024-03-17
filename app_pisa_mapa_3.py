@@ -490,4 +490,4 @@ def update_output(selected_community, clickData):
 
 # Ejecutar la aplicación
 if __name__ == '__main__':
-    app.run_server(debug=True, port=8074)
+    app.run_server(debug=False)
