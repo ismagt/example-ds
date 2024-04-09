@@ -8,9 +8,6 @@ import numpy as np
 import pandas as pd
 import json
 import dash_bootstrap_components as dbc
-import shap
-from sklearn.ensemble import RandomForestClassifier
-
 
 with open('train_test_data.pkl', 'rb') as file:
     X_train, X_test, y_train, y_test = pickle.load(file)
@@ -29,19 +26,8 @@ with open('shap_values.pkl', 'rb') as file:
 with open('feature_names.pkl', 'rb') as file:
     feature_names = pickle.load(file)
 
-
-# Supongamos que 'reducer' es un paso de preprocesamiento, como PCA, y tienes un modelo predictivo después
-modelo_final = RandomForestClassifier()  # Por ejemplo, un clasificador
-
-# Entrenar tu pipeline (suponiendo que X_train y y_train ya están definidos)
-modelo_final.fit(X_test, y_test)
-
-
-# Suponiendo que 'modelo_final' es tu modelo RandomForest o similar
-explainer = shap.TreeExplainer(modelo_final)
-
-# Calcular los valores SHAP (cambiar X_test por tus datos de prueba)
-shap_values = explainer.shap_values(X_test)
+with open('explainer.pkl', 'rb') as file:
+    explainer = pickle.load(file)
 
 # Ahora, X_train y X_test son DataFrames y puedes acceder a sus índices
 test_indices = X_test.index
@@ -51,31 +37,19 @@ test_indices = X_test.index
 external_stylesheets = [dbc.themes.BOOTSTRAP]
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
-server = app.server
+
 community_options = [{'label': 'All communities', 'value': 'All'}] + \
                     [{'label': community, 'value': community} for community in df_vis['Community'].unique()]
 
 # Layout de la aplicación Dash
 app.layout = html.Div([
-    dbc.Row([
-        dbc.Col(html.Img(src='/assets/banner_2.png', style={'width': '100%', 'height': 'auto'}), width=12)
-    ]),
     dbc.Container(fluid=True, children=[  # Contenedor principal
         dbc.Row([
-            dbc.Col(
-                dcc.Loading(
-                    children=[dcc.Graph(id='3d-plot')],
-                    type="circle",  # Ajusta el tipo según prefieras
-                ), 
-                width=8
-            ),
-            dbc.Col(
-                dcc.Loading(
-                    children=[dcc.Graph(id='shap-bar-chart')],
-                    type="circle",
-                ), 
-                width=4
-            ),
+            dbc.Col(html.Img(src='/assets/banner_2.png', style={'width': '100%', 'height': 'auto'}), width=12)
+        ]),
+        dbc.Row([
+            dbc.Col(dcc.Graph(id='3d-plot'), width=8),
+            dbc.Col(dcc.Graph(id='shap-bar-chart'), width=4),
         ]),
         dbc.Row([
             dbc.Col(dcc.Dropdown(id='community-dropdown', 
@@ -84,55 +58,43 @@ app.layout = html.Div([
                                  clearable=False), width=8),
         ]),
         dbc.Row([
-            dbc.Col(
-                dcc.Loading(
-                    children=[dcc.Graph(id='histogram-repeat')],
-                    type="circle",
-                ), 
-                width=2
-            ),
-            dbc.Col(
-                dcc.Loading(
-                    children=[dcc.Graph(id='histogram-level')],
-                    type="circle",
-                ), 
-                width=2
-            ),
-            dbc.Col(
-                dcc.Loading(
-                    children=[dcc.Graph(id='histogram-gender')],
-                    type="circle",
-                ), 
-                width=2
-            ),
-            dbc.Col(
-                dcc.Loading(
-                    children=[dcc.Graph(id='histogram-school-type')],
-                    type="circle",
-                ), 
-                width=2
-            ),
-            dbc.Col(
-                dcc.Loading(
-                    children=[dcc.Graph(id='community-map')],
-                    type="circle",
-                ), 
-                width=4
-            ),
+            dbc.Col(dcc.Graph(id='histogram-repeat'), width=2),
+            dbc.Col(dcc.Graph(id='histogram-level'), width=2),
+            dbc.Col(dcc.Graph(id='histogram-gender'), width=2),
+            dbc.Col(dcc.Graph(id='histogram-school-type'), width=2),
+            dbc.Col(dcc.Graph(id='community-map'), width=4),
         ]),
-    ]),
-    html.Footer(
+        dbc.Row([
+            dbc.Col(dcc.Graph(id='histogram-had-class'), width=4),
+            dbc.Col(dcc.Graph(id='histogram-books'), width=4),
+            dbc.Col(dcc.Graph(id='histogram-num-devices'), width=4),
+        ]),
+    ],),
+   html.Footer(
         [
             html.Div(
                 [
-                    html.P(
+                    html.P([
                         "Designed by Ismael Gómez-Talal",
-                        className="footer-text"
+                        html.Br(),
+                        "(Member of BigMed+ Group)"
+                    ], className="footer-text"),
+                    html.Img(
+                        src=app.get_asset_url('vertical.png'),
+                        className="footer-image"
                     ),
+                    html.A(
+                    # Componente de imagen
                     html.Img(
                         src=app.get_asset_url('logo_urjc.png'),
-                        className="footer-image"
-                    )
+                        className="footer-image",
+                        style={'cursor': 'pointer'}
+                    ),
+                    # URL a la que redirigirá el clic en la imagen
+                    href="https://gestion2.urjc.es/pdi/grupos-investigacion/bigmed+",
+                    # Opcional: para abrir el enlace en una nueva pestaña
+                    target="_blank"
+                    ),
                 ],
                 className="footer-container"
             )
@@ -140,6 +102,7 @@ app.layout = html.Div([
         className="footer"
     ) 
 ])
+
 # Callback para la actualización de la visualización 3D y los histogramas
 @app.callback(
     [
@@ -149,7 +112,10 @@ app.layout = html.Div([
         Output('histogram-gender', 'figure'),
         Output('histogram-school-type', 'figure'),
         Output('shap-bar-chart', 'figure'),
-        Output('community-map', 'figure')
+        Output('community-map', 'figure'),
+        Output('histogram-had-class', 'figure'),
+        Output('histogram-books', 'figure'),
+        Output('histogram-num-devices', 'figure'),
     ],
     [Input('community-dropdown', 'value'),
      Input('3d-plot', 'clickData')]
@@ -175,6 +141,10 @@ def update_output(selected_community, clickData):
     fig_level = go.Figure()
     fig_gender = go.Figure()
     fig_school_type = go.Figure()
+
+    fig_had_extra_math_classes = go.Figure()
+    fig_num_books = go.Figure()
+    fig_num_digital_devices = go.Figure()
     fig_shap = go.Figure()
 
     # Define un mapa de colores para mantener los colores consistentes
@@ -185,10 +155,14 @@ def update_output(selected_community, clickData):
         for i, community in enumerate(df_vis['Community'].unique()):
             subset = df_vis[df_vis['Community'] == community]
             hover_text = subset.apply(lambda row: f"Autonomous_Community: {row['Community']}<br>" +
-                                                f"REPEAT: {row['REPEAT']}<br>" +
-                                                f"Gender: {row['Gender']}<br>" +
-                                                f"School_Type: {row['School_Type']}<br>" +
-                                                f"Level: {row['level']}", axis=1).tolist()
+                                                    f"Repeat: {row['REPEAT']}<br>" +
+                                                    f"Gender: {row['Gender']}<br>" +
+                                                    f"School Type: {row['School_Type']}<br>" +
+                                                    f"Level: {row['level']}<br>" +
+                                                    f"Num digital devices: {row['Num_digital_devices']}<br>" +
+                                                    f"Num books: {row['Num_books']}<br>" +
+                                                    f"No extra math classes: {row['Had_extra_math_classes']}",
+                                                    axis=1).tolist()
             fig_3d.add_trace(go.Scatter3d(
                 # Tus parámetros...
                 marker=dict(size=5, color=color_map[i % len(color_map)]),  # Aplica el color del mapa de colores
@@ -205,10 +179,14 @@ def update_output(selected_community, clickData):
         for community in filtered_df['Community'].unique():
             subset = df_vis[df_vis['Community'] == community]
             hover_text = subset.apply(lambda row: f"Autonomous_Community: {row['Community']}<br>" +
-                                                f"REPEAT: {row['REPEAT']}<br>" +
-                                                f"Gender: {row['Gender']}<br>" +
-                                                f"School_Type: {row['School_Type']}<br>" +
-                                                f"Level: {row['level']}", axis=1).tolist()
+                                                    f"Repeat: {row['REPEAT']}<br>" +
+                                                    f"Gender: {row['Gender']}<br>" +
+                                                    f"School Type: {row['School_Type']}<br>" +
+                                                    f"Level: {row['level']}<br>" +
+                                                    f"Num digital devices: {row['Num_digital_devices']}<br>" +
+                                                    f"Num books: {row['Num_books']}<br>" +
+                                                    f"No extra math classes: {row['Had_extra_math_classes']}",
+                                                    axis=1).tolist()
 
             fig_3d.add_trace(go.Scatter3d(
                 x=subset['Component_1'],
@@ -407,6 +385,124 @@ def update_output(selected_community, clickData):
     # Actualizar las trazas para cambiar el color del texto a blanco y mejorar la visibilidad
     fig_school_type.update_traces(marker_line_color='white', marker_line_width=1.5)
 
+    # Definir la función de mapeo para los dispositivos digitales
+    def categorize_devices(x):
+        if x == "1":
+            return "0"
+        elif x == "2":
+            return "1"
+        elif x == "3":
+            return "2"
+        elif x == "4":
+            return "3"
+        elif x == "5":
+            return "4"
+        elif x == "6":
+            return "5"
+        elif x == "7":
+            return "6-10"
+        else:
+            return "More than 10"
+
+    # Aplicar la función para crear una nueva columna en el DataFrame
+    filtered_df['Num_digital_devices_range'] = filtered_df['Num_digital_devices'].apply(categorize_devices)
+
+    # Definir el orden de las categorías basado en la lógica deseada
+    device_order = ['0', '1', '2', '3', '4', '5', '6-10', 'More than 10']
+
+    # Calcular los conteos de cada categoría
+    counts = filtered_df['Num_digital_devices_range'].value_counts(normalize=True) * 100  # los porcentajes
+    counts = counts.reindex(device_order)  # asegurar que el orden es correcto
+
+    # Crear el histograma con las categorías y el orden definidos
+    fig_num_digital_devices = px.histogram(filtered_df, x='Num_digital_devices_range',
+                                        category_orders={'Num_digital_devices_range': device_order},
+                                        title="Number of Digital Devices with Screens in the Home",
+                                        labels={'Num_digital_devices_range': "Number of Devices"},
+                                        color_discrete_sequence=["#B6E2FA"])  # Color suave
+
+    # Asegurarse de que el histograma muestre el orden deseado
+    fig_num_digital_devices.update_xaxes(categoryorder='array', categoryarray=device_order)
+
+    # Añadir anotaciones de porcentaje para cada barra
+    for index, value in counts.items():
+        fig_num_digital_devices.add_annotation(
+            x=index,
+            y=value,
+            text=f"{value:.2f}%",  # Formato de porcentaje con dos decimales
+            showarrow=False,
+            yshift=10
+        )
+
+    # Actualizar el layout para evitar que las anotaciones queden fuera de los límites del gráfico
+    fig_num_digital_devices.update_layout(margin={'t': 50, 'b': 50, 'r': 0, 'l': 0})
+
+
+    # Suponiendo que 'filtered_df' tiene una columna 'Had_extra_math_classes' con valores 1 y 0
+    counts = filtered_df['Had_extra_math_classes'].value_counts()
+
+    # Cambiar las etiquetas a inglés. Asumiendo que 1 significa que el estudiante NO asiste a clases extra y 0 que SÍ asiste
+    labels = ['Does not attend extra classes' if label == '1' else 'Attends extra classes' for label in counts.index]
+
+    # Crear el gráfico de tarta con las etiquetas en inglés
+    fig_had_extra_math_classes = go.Figure(data=[go.Pie(labels=labels, values=counts.values, hole=.3)])
+
+    # Personalizar el gráfico de tarta
+    fig_had_extra_math_classes.update_traces(textinfo='percent+label', marker=dict(colors=["#6495ED", "#FFD700"]))
+    fig_had_extra_math_classes.update_layout(title_text="Extra Math Classes Attendance")
+
+    # Ajustar el layout para dar espacio a las anotaciones de emoticonos, si decides añadirlas
+    fig_had_extra_math_classes.update_layout(margin=dict(t=50, l=25, r=100, b=25))
+
+    def categorize_books(x):
+        if x == "1":
+            return "0"
+        elif x == "2":
+            return "1-10"
+        elif x == "3":
+            return "11-25"
+        elif x == "4":
+            return "26-100"
+        elif x == "5":
+            return "101-200"
+        elif x == "6":
+            return "201-500"
+        else:
+            return "More than 500"
+
+    # Aplicar la función para crear una nueva columna de rangos de libros
+    filtered_df['Num_books_range'] = filtered_df['Num_books'].apply(categorize_books)
+
+    # Ordenar las categorías manualmente
+    order = ['0', '1-10', '11-25', '26-100', '101-200', '201-500', 'More than 500']
+
+    # Calcular los conteos de cada categoría en porcentaje
+    counts = filtered_df['Num_books_range'].value_counts(normalize=True) * 100  # los porcentajes
+    counts = counts.reindex(order)  # asegurar que el orden es correcto
+
+    # Crear el histograma con las categorías y el orden definidos
+    fig_num_books = px.histogram(filtered_df, x='Num_books_range',
+                                category_orders={'Num_books_range': order},
+                                title="Number of Books in the House",
+                                labels={'Num_books_range': "Number of Books"},
+                                color_discrete_sequence=["#A9CCE3"])  # Color suave
+
+    # Asegurarse de que el histograma muestre el orden deseado
+    fig_num_books.update_xaxes(categoryorder='array', categoryarray=order)
+
+    # Añadir anotaciones de porcentaje para cada barra
+    for index, value in counts.items():  # Usar .items() en lugar de .iteritems()
+        fig_num_books.add_annotation(
+            x=index,
+            y=value,
+            text=f"{value:.2f}%",  # Formato de porcentaje con dos decimales
+            showarrow=False,
+            yshift=10
+        )
+
+    # Actualizar el layout para evitar que las anotaciones queden fuera de los límites del gráfico
+    fig_num_books.update_layout(margin={'t': 50, 'b': 50, 'r': 0, 'l': 0})
+
 
     # Ahora, usa 'point_index' para obtener los valores SHAP para el punto seleccionado
     if point_index is not None:
@@ -441,26 +537,56 @@ def update_output(selected_community, clickData):
         
         # Ordena las características por sus valores SHAP de mayor a menor importancia
         df_shap_sorted = df_shap_filtered.sort_values(by='shap_value', ascending=False)
-        # Añadir las barras individualmente para poder controlar su color
-        for index, row in df_shap_sorted.iterrows():
-            # Define el color de cada barra individualmente dentro del bucle
-            color = 'blue' if row['shap_value'] > 0 else 'red'
-            
-            fig_shap.add_trace(go.Bar(
-                x=[row['shap_value']],
-                y=[row['feature']],
-                orientation='h',
-                marker_color=color,  # Aplicar el color definido
-                name=row['feature']  # Esto añadirá cada característica a la leyenda, puede omitirse si se prefiere no tener leyenda
-            ))
+                # Variables para almacenar valores positivos y negativos de SHAP por separado
+        positive_shap = df_shap_sorted[df_shap_sorted['shap_value'] > 0]
+        negative_shap = df_shap_sorted[df_shap_sorted['shap_value'] <= 0]
 
-        # Actualizar el layout del gráfico según necesites
+        # Añadir traza para valores SHAP positivos
+        fig_shap.add_trace(go.Bar(
+            x=positive_shap['shap_value'],
+            y=positive_shap['feature'],
+            orientation='h',
+            marker_color='blue',
+            name='Contributes to low level performance'
+        ))
+
+        # Añadir traza para valores SHAP negativos
+        fig_shap.add_trace(go.Bar(
+            x=negative_shap['shap_value'],
+            y=negative_shap['feature'],
+            orientation='h',
+            marker_color='red',
+            name='Contributes to high level performance'
+        ))
+
+        # Actualizar el layout del gráfico
         fig_shap.update_layout(
             title="SHAP Values for the Selected Point",
             xaxis_title="SHAP Value",
             yaxis_title="Feature",
-            yaxis={'categoryorder': 'total ascending'}  # Asegúrate de que el orden de las características sea el correcto
+            yaxis={'categoryorder': 'total ascending'},
+            legend_title="SHAP contribution"
         )
+        # # Añadir las barras individualmente para poder controlar su color
+        # for index, row in df_shap_sorted.iterrows():
+        #     # Define el color de cada barra individualmente dentro del bucle
+        #     color = 'blue' if row['shap_value'] > 0 else 'red'
+            
+        #     fig_shap.add_trace(go.Bar(
+        #         x=[row['shap_value']],
+        #         y=[row['feature']],
+        #         orientation='h',
+        #         marker_color=color,  # Aplicar el color definido
+        #         name=row['feature']  # Esto añadirá cada característica a la leyenda, puede omitirse si se prefiere no tener leyenda
+        #     ))
+
+        # # Actualizar el layout del gráfico según necesites
+        # fig_shap.update_layout(
+        #     title="SHAP Values for the Selected Point",
+        #     xaxis_title="SHAP Value",
+        #     yaxis_title="Feature",
+        #     yaxis={'categoryorder': 'total ascending'}  # Asegúrate de que el orden de las características sea el correcto
+        # )
     else:
         # Proporciona una figura vacía o con valores por defecto si no hay punto seleccionado
         fig_shap = px.bar(title="Select a point in the 3D graph to see SHAP values")
@@ -527,8 +653,8 @@ def update_output(selected_community, clickData):
     fig_map.update_geos(fitbounds="locations", visible=False)
     fig_map.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
 
-    return fig_3d, fig_repeat, fig_level, fig_gender, fig_school_type, fig_shap, fig_map
+    return fig_3d, fig_repeat, fig_level, fig_gender, fig_school_type, fig_shap, fig_map, fig_had_extra_math_classes, fig_num_digital_devices, fig_num_books
 
 # Ejecutar la aplicación
 if __name__ == '__main__':
-    app.run_server(debug=False)
+    app.run_server(debug=True, port=8075)
