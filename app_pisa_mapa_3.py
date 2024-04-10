@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import json
 import dash_bootstrap_components as dbc
+from sklearn.ensemble import RandomForestClassifier
 
 with open('train_test_data.pkl', 'rb') as file:
     X_train, X_test, y_train, y_test = pickle.load(file)
@@ -26,8 +27,17 @@ with open('shap_values.pkl', 'rb') as file:
 with open('feature_names.pkl', 'rb') as file:
     feature_names = pickle.load(file)
 
-with open('explainer.pkl', 'rb') as file:
-    explainer = pickle.load(file)
+
+# Supongamos que 'reducer' es un paso de preprocesamiento, como PCA, y tienes un modelo predictivo después
+modelo_final = RandomForestClassifier()  # Por ejemplo, un clasificador
+
+# Entrenar tu pipeline (suponiendo que X_train y y_train ya están definidos)
+modelo_final.fit(X_test, y_test)
+
+
+# Suponiendo que 'modelo_final' es tu modelo RandomForest o similar
+explainer = shap.TreeExplainer(modelo_final)
+
 
 # Ahora, X_train y X_test son DataFrames y puedes acceder a sus índices
 test_indices = X_test.index
