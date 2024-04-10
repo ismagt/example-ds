@@ -9,6 +9,7 @@ import pandas as pd
 import json
 import dash_bootstrap_components as dbc
 from sklearn.ensemble import RandomForestClassifier
+import shap
 
 with open('train_test_data.pkl', 'rb') as file:
     X_train, X_test, y_train, y_test = pickle.load(file)
